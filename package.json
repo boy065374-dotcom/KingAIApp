@@ -1,7 +1,7 @@
 {
   "name": "kingaiapp",
   "version": "1.0.0",
-  "description": "KingAI - KingGPT",
+  "private": true,
   "main": "kinggpt.js",
   "scripts": {
     "start": "node kinggpt.js"
