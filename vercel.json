@@ -16,7 +16,19 @@
       "dest": "/kinggpt.js"
     },
     {
-      "src": "/(.*)",
+      "src": "/style.css",
+      "dest": "/style.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/app.js"
+    },
+    {
+      "src": "/1787430604018.png",
+      "dest": "/1787430604018.png"
+    },
+    {
+      "src": "/",
       "dest": "/index.html"
     }
   ]
