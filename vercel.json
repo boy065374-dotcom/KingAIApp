@@ -4,10 +4,6 @@
     {
       "src": "kinggpt.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -16,16 +12,8 @@
       "dest": "/kinggpt.js"
     },
     {
-      "src": "/style.css",
-      "dest": "/style.css"
-    },
-    {
-      "src": "/app.js",
-      "dest": "/app.js"
-    },
-    {
-      "src": "/1787430604018.png",
-      "dest": "/1787430604018.png"
+      "src": "/(.*\\.(css|js|png|jpg|jpeg|svg|ico|webp))",
+      "dest": "/$1"
     },
     {
       "src": "/",
