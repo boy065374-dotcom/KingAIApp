@@ -5,12 +5,13 @@ const { GoogleGenAI } = require("@google/genai");
 
 const {
   db,
+  dbReady,
   registerAuthRoutes,
   getCurrentUser
 } = require("./auth");
 
 const app = express();
-const PORT = 3006;
+const PORT = process.env.PORT || 3006;
 
 
 // ========================================
@@ -52,7 +53,6 @@ const SYSTEM_INSTRUCTION = `
 // ========================================
 
 app.use(express.json());
-
 app.use(express.static("."));
 
 
@@ -65,54 +65,64 @@ registerAuthRoutes(app);
 
 // ========================================
 // DATABASE - CHAT SYSTEM
+// PostgreSQL / Neon
 // ========================================
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS chats (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title TEXT NOT NULL DEFAULT 'محادثة جديدة',
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+const chatDbReady = initChatDatabase();
 
-    FOREIGN KEY (user_id)
-      REFERENCES users(id)
-      ON DELETE CASCADE
-  );
+async function initChatDatabase() {
+  await dbReady;
 
-  CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    chat_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    role TEXT NOT NULL CHECK (
-      role IN ('user', 'assistant')
-    ),
-    content TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS chats (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL,
+      title TEXT NOT NULL DEFAULT 'محادثة جديدة',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (chat_id)
-      REFERENCES chats(id)
-      ON DELETE CASCADE,
+      CONSTRAINT chats_user_fk
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+    );
 
-    FOREIGN KEY (user_id)
-      REFERENCES users(id)
-      ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS messages (
+      id BIGSERIAL PRIMARY KEY,
+      chat_id BIGINT NOT NULL,
+      user_id BIGINT NOT NULL,
+      role TEXT NOT NULL CHECK (
+        role IN ('user', 'assistant')
+      ),
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  CREATE INDEX IF NOT EXISTS idx_chats_user
-  ON chats(user_id);
+      CONSTRAINT messages_chat_fk
+        FOREIGN KEY (chat_id)
+        REFERENCES chats(id)
+        ON DELETE CASCADE,
 
-  CREATE INDEX IF NOT EXISTS idx_chats_updated
-  ON chats(user_id, updated_at);
+      CONSTRAINT messages_user_fk
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+    );
 
-  CREATE INDEX IF NOT EXISTS idx_messages_chat
-  ON messages(chat_id);
+    CREATE INDEX IF NOT EXISTS idx_chats_user
+    ON chats(user_id);
 
-  CREATE INDEX IF NOT EXISTS idx_messages_user
-  ON messages(user_id);
-`);
+    CREATE INDEX IF NOT EXISTS idx_chats_updated
+    ON chats(user_id, updated_at);
 
-console.log("💾 Chat database ready.");
+    CREATE INDEX IF NOT EXISTS idx_messages_chat
+    ON messages(chat_id);
+
+    CREATE INDEX IF NOT EXISTS idx_messages_user
+    ON messages(user_id);
+  `);
+
+  console.log("💬 Neon chat database ready.");
+}
 
 
 // ========================================
@@ -134,13 +144,11 @@ const preferredModels = [
 // ========================================
 
 async function getAvailableModels() {
-
   const available = [];
 
   const pager = await ai.models.list();
 
   for await (const model of pager) {
-
     if (!model.name) {
       continue;
     }
@@ -162,7 +170,6 @@ async function getAvailableModels() {
 // ========================================
 
 async function askKingGPT(message, user) {
-
   const availableModels =
     await getAvailableModels();
 
@@ -179,14 +186,9 @@ async function askKingGPT(message, user) {
   }
 
 
-  // ======================================
-  // USER CONTEXT
-  // ======================================
-
   let userContext = "";
 
   if (user) {
-
     userContext = `
 معلومات المستخدم الحالي:
 
@@ -201,9 +203,7 @@ ${user.email}
 إذا كان الاسم موجودًا، يمكنك استخدامه بشكل طبيعي في الرد.
 لا تكرر الاسم في كل رسالة.
 `;
-
   } else {
-
     userContext = `
 المستخدم الحالي Guest.
 
@@ -217,47 +217,29 @@ ${user.email}
 
   let lastError;
 
-
-  // ======================================
-  // TRY MODELS
-  // ======================================
-
   for (const model of modelsToTry) {
-
     try {
-
-      console.log(
-        `🤖 تجربة: ${model}`
-      );
+      console.log(`🤖 تجربة: ${model}`);
 
       const response =
         await ai.models.generateContent({
-
           model,
 
           contents: message,
 
           config: {
-
             systemInstruction:
               SYSTEM_INSTRUCTION +
               "\n\n" +
               userContext
-
           }
-
         });
 
-
-      console.log(
-        `✅ تم استخدام: ${model}`
-      );
-
+      console.log(`✅ تم استخدام: ${model}`);
 
       return response.text;
 
     } catch (error) {
-
       lastError = error;
 
       console.log(
@@ -268,22 +250,19 @@ ${user.email}
     }
   }
 
-
   throw lastError;
 }
 
 
 // ========================================
-// CHAT HELPERS
+// AUTH HELPER
 // ========================================
 
-function requireUser(req, res) {
-
+async function requireUser(req, res) {
   const user =
-    getCurrentUser(req);
+    await getCurrentUser(req);
 
   if (!user) {
-
     res.status(401).json({
       error:
         "يجب تسجيل الدخول لاستخدام المحادثات المحفوظة."
@@ -296,23 +275,32 @@ function requireUser(req, res) {
 }
 
 
-function getChatForUser(chatId, userId) {
+// ========================================
+// GET CHAT FOR USER
+// ========================================
 
-  return db.prepare(`
-    SELECT
-      id,
-      user_id,
-      title,
-      created_at,
-      updated_at
-    FROM chats
-    WHERE id = ?
-      AND user_id = ?
-    LIMIT 1
-  `).get(
-    chatId,
-    userId
-  );
+async function getChatForUser(chatId, userId) {
+  const result =
+    await db.query(
+      `
+        SELECT
+          id,
+          user_id,
+          title,
+          created_at,
+          updated_at
+        FROM chats
+        WHERE id = $1
+          AND user_id = $2
+        LIMIT 1
+      `,
+      [
+        Number(chatId),
+        Number(userId)
+      ]
+    );
+
+  return result.rows[0] || null;
 }
 
 
@@ -322,17 +310,16 @@ function getChatForUser(chatId, userId) {
 
 app.post(
   "/api/chats",
-  (req, res) => {
-
+  async (req, res) => {
     try {
+      await chatDbReady;
 
       const user =
-        requireUser(req, res);
+        await requireUser(req, res);
 
       if (!user) {
         return;
       }
-
 
       const title =
         String(
@@ -342,40 +329,33 @@ app.post(
           .trim()
           .slice(0, 120);
 
-
       const result =
-        db.prepare(`
-          INSERT INTO chats (
-            user_id,
-            title
-          )
-          VALUES (?, ?)
-        `).run(
-          user.id,
-          title || "محادثة جديدة"
+        await db.query(
+          `
+            INSERT INTO chats (
+              user_id,
+              title
+            )
+            VALUES ($1, $2)
+            RETURNING
+              id,
+              user_id,
+              title,
+              created_at,
+              updated_at
+          `,
+          [
+            Number(user.id),
+            title || "محادثة جديدة"
+          ]
         );
-
-
-      const chatId =
-        Number(
-          result.lastInsertRowid
-        );
-
-
-      const chat =
-        getChatForUser(
-          chatId,
-          user.id
-        );
-
 
       return res.status(201).json({
         success: true,
-        chat
+        chat: result.rows[0]
       });
 
     } catch (error) {
-
       console.error(
         "CREATE CHAT ERROR:",
         error
@@ -396,38 +376,38 @@ app.post(
 
 app.get(
   "/api/chats",
-  (req, res) => {
-
+  async (req, res) => {
     try {
+      await chatDbReady;
 
       const user =
-        requireUser(req, res);
+        await requireUser(req, res);
 
       if (!user) {
         return;
       }
 
-
-      const chats =
-        db.prepare(`
-          SELECT
-            id,
-            title,
-            created_at,
-            updated_at
-          FROM chats
-          WHERE user_id = ?
-          ORDER BY updated_at DESC
-        `).all(user.id);
-
+      const result =
+        await db.query(
+          `
+            SELECT
+              id,
+              title,
+              created_at,
+              updated_at
+            FROM chats
+            WHERE user_id = $1
+            ORDER BY updated_at DESC
+          `,
+          [Number(user.id)]
+        );
 
       return res.json({
         success: true,
-        chats
+        chats: result.rows
       });
 
     } catch (error) {
-
       console.error(
         "GET CHATS ERROR:",
         error
@@ -448,74 +428,66 @@ app.get(
 
 app.get(
   "/api/chats/:chatId/messages",
-  (req, res) => {
-
+  async (req, res) => {
     try {
+      await chatDbReady;
 
       const user =
-        requireUser(req, res);
+        await requireUser(req, res);
 
       if (!user) {
         return;
       }
 
-
       const chatId =
-        Number(
-          req.params.chatId
-        );
-
+        Number(req.params.chatId);
 
       if (!Number.isInteger(chatId)) {
-
         return res.status(400).json({
           error:
             "معرف المحادثة غير صحيح."
         });
       }
 
-
       const chat =
-        getChatForUser(
+        await getChatForUser(
           chatId,
           user.id
         );
 
-
       if (!chat) {
-
         return res.status(404).json({
           error:
             "المحادثة غير موجودة."
         });
       }
 
-
-      const messages =
-        db.prepare(`
-          SELECT
-            id,
-            role,
-            content,
-            created_at
-          FROM messages
-          WHERE chat_id = ?
-            AND user_id = ?
-          ORDER BY id ASC
-        `).all(
-          chatId,
-          user.id
+      const result =
+        await db.query(
+          `
+            SELECT
+              id,
+              role,
+              content,
+              created_at
+            FROM messages
+            WHERE chat_id = $1
+              AND user_id = $2
+            ORDER BY id ASC
+          `,
+          [
+            chatId,
+            Number(user.id)
+          ]
         );
-
 
       return res.json({
         success: true,
         chat,
-        messages
+        messages: result.rows
       });
 
     } catch (error) {
-
       console.error(
         "GET MESSAGES ERROR:",
         error
@@ -523,7 +495,7 @@ app.get(
 
       return res.status(500).json({
         error:
-          "حدث خطأ أثناء تحميل الرسائل."
+          "حدث خطأ أثناء تحميل المحادثة."
       });
     }
   }
@@ -536,59 +508,52 @@ app.get(
 
 app.delete(
   "/api/chats/:chatId",
-  (req, res) => {
-
+  async (req, res) => {
     try {
+      await chatDbReady;
 
       const user =
-        requireUser(req, res);
+        await requireUser(req, res);
 
       if (!user) {
         return;
       }
 
-
       const chatId =
-        Number(
-          req.params.chatId
-        );
-
+        Number(req.params.chatId);
 
       if (!Number.isInteger(chatId)) {
-
         return res.status(400).json({
           error:
             "معرف المحادثة غير صحيح."
         });
       }
 
-
       const result =
-        db.prepare(`
-          DELETE FROM chats
-          WHERE id = ?
-            AND user_id = ?
-        `).run(
-          chatId,
-          user.id
+        await db.query(
+          `
+            DELETE FROM chats
+            WHERE id = $1
+              AND user_id = $2
+          `,
+          [
+            chatId,
+            Number(user.id)
+          ]
         );
 
-
-      if (Number(result.changes) === 0) {
-
+      if (result.rowCount === 0) {
         return res.status(404).json({
           error:
             "المحادثة غير موجودة."
         });
       }
 
-
       return res.json({
         success: true
       });
 
     } catch (error) {
-
       console.error(
         "DELETE CHAT ERROR:",
         error
@@ -610,29 +575,18 @@ app.delete(
 app.post(
   "/api/chat",
   async (req, res) => {
-
     try {
-
-      // ==================================
-      // GET CURRENT USER
-      // ==================================
+      await chatDbReady;
 
       const user =
-        getCurrentUser(req);
-
-
-      // ==================================
-      // MESSAGE
-      // ==================================
+        await getCurrentUser(req);
 
       const message =
         String(
           req.body?.message || ""
         ).trim();
 
-
       if (!message) {
-
         return res.status(400).json({
           error:
             "الرسالة فارغة."
@@ -640,39 +594,36 @@ app.post(
       }
 
 
-      // ==================================
-      // CHAT ID
-      // ==================================
-
       let chatId =
-        Number(
-          req.body?.chatId
-        );
+        Number(req.body?.chatId);
 
 
       // ==================================
-      // CREATE CHAT FOR AUTH USER
+      // CREATE CHAT
       // ==================================
 
-      if (user && !Number.isInteger(chatId)) {
-
+      if (
+        user &&
+        !Number.isInteger(chatId)
+      ) {
         const result =
-          db.prepare(`
-            INSERT INTO chats (
-              user_id,
-              title
-            )
-            VALUES (?, ?)
-          `).run(
-            user.id,
-            "محادثة جديدة"
+          await db.query(
+            `
+              INSERT INTO chats (
+                user_id,
+                title
+              )
+              VALUES ($1, $2)
+              RETURNING id
+            `,
+            [
+              Number(user.id),
+              "محادثة جديدة"
+            ]
           );
-
 
         chatId =
-          Number(
-            result.lastInsertRowid
-          );
+          Number(result.rows[0].id);
       }
 
 
@@ -680,17 +631,17 @@ app.post(
       // VERIFY CHAT OWNERSHIP
       // ==================================
 
-      if (user && Number.isInteger(chatId)) {
-
+      if (
+        user &&
+        Number.isInteger(chatId)
+      ) {
         const chat =
-          getChatForUser(
+          await getChatForUser(
             chatId,
             user.id
           );
 
-
         if (!chat) {
-
           return res.status(404).json({
             error:
               "المحادثة غير موجودة."
@@ -703,26 +654,30 @@ app.post(
       // SAVE USER MESSAGE
       // ==================================
 
-      if (user && Number.isInteger(chatId)) {
-
-        db.prepare(`
-          INSERT INTO messages (
-            chat_id,
-            user_id,
-            role,
-            content
-          )
-          VALUES (?, ?, 'user', ?)
-        `).run(
-          chatId,
-          user.id,
-          message
+      if (
+        user &&
+        Number.isInteger(chatId)
+      ) {
+        await db.query(
+          `
+            INSERT INTO messages (
+              chat_id,
+              user_id,
+              role,
+              content
+            )
+            VALUES ($1, $2, 'user', $3)
+          `,
+          [
+            chatId,
+            Number(user.id),
+            message
+          ]
         );
 
 
-        // أول رسالة تصبح عنوان المحادثة
         const chat =
-          getChatForUser(
+          await getChatForUser(
             chatId,
             user.id
           );
@@ -732,42 +687,44 @@ app.post(
           chat &&
           chat.title === "محادثة جديدة"
         ) {
-
           let title =
             message
               .replace(/\s+/g, " ")
               .trim()
               .slice(0, 60);
 
-
           if (!title) {
             title = "محادثة جديدة";
           }
 
-
-          db.prepare(`
-            UPDATE chats
-            SET
-              title = ?,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-              AND user_id = ?
-          `).run(
-            title,
-            chatId,
-            user.id
+          await db.query(
+            `
+              UPDATE chats
+              SET
+                title = $1,
+                updated_at = CURRENT_TIMESTAMP
+              WHERE id = $2
+                AND user_id = $3
+            `,
+            [
+              title,
+              chatId,
+              Number(user.id)
+            ]
           );
 
         } else {
-
-          db.prepare(`
-            UPDATE chats
-            SET updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-              AND user_id = ?
-          `).run(
-            chatId,
-            user.id
+          await db.query(
+            `
+              UPDATE chats
+              SET updated_at = CURRENT_TIMESTAMP
+              WHERE id = $1
+                AND user_id = $2
+            `,
+            [
+              chatId,
+              Number(user.id)
+            ]
           );
         }
       }
@@ -788,31 +745,38 @@ app.post(
       // SAVE ASSISTANT MESSAGE
       // ==================================
 
-      if (user && Number.isInteger(chatId)) {
-
-        db.prepare(`
-          INSERT INTO messages (
-            chat_id,
-            user_id,
-            role,
-            content
-          )
-          VALUES (?, ?, 'assistant', ?)
-        `).run(
-          chatId,
-          user.id,
-          reply
+      if (
+        user &&
+        Number.isInteger(chatId)
+      ) {
+        await db.query(
+          `
+            INSERT INTO messages (
+              chat_id,
+              user_id,
+              role,
+              content
+            )
+            VALUES ($1, $2, 'assistant', $3)
+          `,
+          [
+            chatId,
+            Number(user.id),
+            reply
+          ]
         );
 
-
-        db.prepare(`
-          UPDATE chats
-          SET updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-            AND user_id = ?
-        `).run(
-          chatId,
-          user.id
+        await db.query(
+          `
+            UPDATE chats
+            SET updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+              AND user_id = $2
+          `,
+          [
+            chatId,
+            Number(user.id)
+          ]
         );
       }
 
@@ -822,11 +786,11 @@ app.post(
       // ==================================
 
       return res.json({
-
         reply,
 
         chatId:
-          user && Number.isInteger(chatId)
+          user &&
+          Number.isInteger(chatId)
             ? chatId
             : null,
 
@@ -842,25 +806,19 @@ app.post(
                   user.displayName
               }
             : null
-
       });
 
     } catch (error) {
-
       console.error(
         "❌ Gemini Error:",
         error
       );
 
-
       return res.status(500).json({
-
         error:
           error.message ||
           "حدث خطأ أثناء الاتصال بـ Gemini."
-
       });
-
     }
   }
 );
@@ -873,7 +831,6 @@ app.post(
 app.listen(
   PORT,
   () => {
-
     console.log(
       "========================================"
     );
@@ -887,7 +844,7 @@ app.listen(
     );
 
     console.log(
-      `🌐 http://localhost:${PORT}`
+      `🌐 Port: ${PORT}`
     );
 
     console.log(
@@ -895,7 +852,7 @@ app.listen(
     );
 
     console.log(
-      "💾 SQLite: kingai.db"
+      "💾 Database: Neon PostgreSQL"
     );
 
     console.log(
@@ -909,6 +866,5 @@ app.listen(
     console.log(
       "========================================"
     );
-
   }
 );
