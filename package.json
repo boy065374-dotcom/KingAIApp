@@ -1,15 +1,16 @@
 {
-  "name": "kingaiapp",
+  "name": "kinggpt",
   "version": "1.0.0",
-  "description": "KingAI - KingGPT",
+  "private": true,
   "main": "kinggpt.js",
   "scripts": {
     "start": "node kinggpt.js"
   },
   "dependencies": {
-    "@google/genai": "^2.18.0",
-    "dotenv": "^17.2.2",
-    "express": "^5.2.1",
-    "nodemailer": "^9.0.5"
+    "@google/genai": "^1.16.0",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "nodemailer": "^7.0.5",
+    "pg": "^8.16.3"
   }
 }
