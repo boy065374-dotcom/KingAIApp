@@ -1,3 +1,7 @@
+// ==================================================
+// KINGGPT APP.JS
+// ==================================================
+
 const authScreen = document.getElementById("authScreen");
 const app = document.getElementById("app");
 
@@ -19,18 +23,30 @@ let currentChatId = null;
 
 
 // ==================================================
-// AUTH
+// AUTH UI
 // ==================================================
 
 function showApp() {
-  authScreen.style.display = "none";
-  app.classList.remove("app-hidden");
+  if (authScreen) {
+    authScreen.style.display = "none";
+  }
+
+  if (app) {
+    app.classList.remove("app-hidden");
+  }
 }
 
+
 function showAuth() {
-  authScreen.style.display = "flex";
-  app.classList.add("app-hidden");
+  if (authScreen) {
+    authScreen.style.display = "flex";
+  }
+
+  if (app) {
+    app.classList.add("app-hidden");
+  }
 }
+
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -43,6 +59,10 @@ function isValidEmail(email) {
 
 function restoreAuthScreen() {
 
+  if (!authScreen) {
+    return;
+  }
+
   authScreen.innerHTML = `
     <div class="auth-card">
 
@@ -54,7 +74,11 @@ function restoreAuthScreen() {
         سجّل الدخول للمتابعة
       </p>
 
-      <button class="google-btn" id="googleBtn" type="button">
+      <button
+        class="google-btn"
+        id="googleBtn"
+        type="button"
+      >
         <span class="google-icon">G</span>
         <span>المتابعة باستخدام Google</span>
       </button>
@@ -77,22 +101,36 @@ function restoreAuthScreen() {
         autocomplete="current-password"
       >
 
-      <button class="auth-btn" id="loginBtn" type="button">
+      <button
+        class="auth-btn"
+        id="loginBtn"
+        type="button"
+      >
         تسجيل الدخول
       </button>
 
-      <button class="forgot-btn" id="forgotBtn" type="button">
+      <button
+        class="forgot-btn"
+        id="forgotBtn"
+        type="button"
+      >
         نسيت كلمة المرور؟
       </button>
 
       <p class="auth-switch">
         ليس لديك حساب؟
-        <button id="signupBtn" type="button">
+        <button
+          id="signupBtn"
+          type="button"
+        >
           إنشاء حساب
         </button>
       </p>
 
-      <p class="auth-message" id="authMessage"></p>
+      <p
+        class="auth-message"
+        id="authMessage"
+      ></p>
 
     </div>
   `;
@@ -118,39 +156,238 @@ function setupAuthElements() {
   const password =
     document.getElementById("passwordInput");
 
+  const forgot =
+    document.getElementById("forgotBtn");
+
+
   if (google) {
+
     google.addEventListener("click", () => {
 
-      document.getElementById(
-        "authMessage"
-      ).textContent =
-        "🔐 تسجيل الدخول باستخدام Google سيتم تفعيله لاحقًا.";
+      const message =
+        document.getElementById("authMessage");
 
-    });
-  }
+      if (message) {
 
-  if (login) {
-    login.addEventListener("click", loginUser);
-  }
+        message.textContent =
+          "🔐 تسجيل الدخول باستخدام Google سيتم تفعيله لاحقًا.";
 
-  if (signup) {
-    signup.addEventListener("click", signupUser);
-  }
-
-  [email, password].forEach(input => {
-
-    if (!input) return;
-
-    input.addEventListener("keydown", event => {
-
-      if (event.key === "Enter") {
-        event.preventDefault();
-        loginUser();
       }
 
     });
 
+  }
+
+
+  if (login) {
+    login.addEventListener(
+      "click",
+      loginUser
+    );
+  }
+
+
+  if (signup) {
+    signup.addEventListener(
+      "click",
+      signupUser
+    );
+  }
+
+
+  if (forgot) {
+
+    forgot.addEventListener(
+      "click",
+      showPasswordReset
+    );
+
+  }
+
+
+  [email, password].forEach(input => {
+
+    if (!input) {
+      return;
+    }
+
+    input.addEventListener(
+      "keydown",
+      event => {
+
+        if (event.key === "Enter") {
+
+          event.preventDefault();
+
+          loginUser();
+
+        }
+
+      }
+    );
+
   });
+
+}
+
+
+// ==================================================
+// PASSWORD RESET SCREEN
+// ==================================================
+
+function showPasswordReset() {
+
+  if (!authScreen) {
+    return;
+  }
+
+  authScreen.innerHTML = `
+    <div class="auth-card">
+
+      <div class="auth-logo">K</div>
+
+      <h1>استرجاع كلمة المرور 🔐</h1>
+
+      <p class="auth-subtitle">
+        اكتب البريد الإلكتروني المرتبط بحسابك
+      </p>
+
+      <input
+        type="email"
+        id="resetEmailInput"
+        placeholder="البريد الإلكتروني"
+        autocomplete="email"
+      >
+
+      <button
+        class="auth-btn"
+        id="resetSendBtn"
+        type="button"
+      >
+        إرسال رابط الاسترجاع
+      </button>
+
+      <button
+        class="forgot-btn"
+        id="backToLoginBtn"
+        type="button"
+      >
+        العودة لتسجيل الدخول
+      </button>
+
+      <p
+        class="auth-message"
+        id="resetMessage"
+      ></p>
+
+    </div>
+  `;
+
+
+  const email =
+    document.getElementById(
+      "resetEmailInput"
+    );
+
+  const send =
+    document.getElementById(
+      "resetSendBtn"
+    );
+
+  const back =
+    document.getElementById(
+      "backToLoginBtn"
+    );
+
+  const message =
+    document.getElementById(
+      "resetMessage"
+    );
+
+
+  if (back) {
+
+    back.addEventListener(
+      "click",
+      () => {
+
+        restoreAuthScreen();
+
+      }
+    );
+
+  }
+
+
+  if (send) {
+
+    send.addEventListener(
+      "click",
+      async () => {
+
+        const value =
+          email?.value.trim() || "";
+
+        if (!isValidEmail(value)) {
+
+          message.textContent =
+            "❌ اكتب بريد إلكتروني صحيح.";
+
+          return;
+        }
+
+        send.disabled = true;
+
+        send.textContent =
+          "جاري الإرسال...";
+
+
+        try {
+
+          // النظام سيتم ربطه بخدمة البريد لاحقًا.
+
+          message.textContent =
+            "📧 نظام إرسال رابط الاسترجاع سيتم تفعيله قريبًا.";
+
+        } finally {
+
+          send.disabled = false;
+
+          send.textContent =
+            "إرسال رابط الاسترجاع";
+
+        }
+
+      }
+    );
+
+  }
+
+
+  if (email) {
+
+    email.addEventListener(
+      "keydown",
+      event => {
+
+        if (event.key === "Enter") {
+
+          event.preventDefault();
+
+          send?.click();
+
+        }
+
+      }
+    );
+
+    setTimeout(
+      () => email.focus(),
+      100
+    );
+
+  }
+
 }
 
 
@@ -162,8 +399,7 @@ function showNameScreen(user) {
 
   currentUser = user;
 
-  authScreen.style.display = "flex";
-  app.classList.add("app-hidden");
+  showAuth();
 
   authScreen.innerHTML = `
     <div class="auth-card">
@@ -185,6 +421,7 @@ function showNameScreen(user) {
         id="displayNameInput"
         placeholder="اكتب اسمك"
         maxlength="50"
+        autocomplete="name"
       >
 
       <button
@@ -203,19 +440,33 @@ function showNameScreen(user) {
     </div>
   `;
 
+
   const input =
-    document.getElementById("displayNameInput");
+    document.getElementById(
+      "displayNameInput"
+    );
 
   const button =
-    document.getElementById("saveNameBtn");
+    document.getElementById(
+      "saveNameBtn"
+    );
 
   const message =
-    document.getElementById("nameMessage");
+    document.getElementById(
+      "nameMessage"
+    );
 
-  button.addEventListener("click", async () => {
+
+  if (!input || !button || !message) {
+    return;
+  }
+
+
+  async function saveName() {
 
     const displayName =
       input.value.trim();
+
 
     if (!displayName) {
 
@@ -225,9 +476,21 @@ function showNameScreen(user) {
       return;
     }
 
+
+    if (displayName.length > 50) {
+
+      message.textContent =
+        "❌ الاسم طويل جدًا.";
+
+      return;
+    }
+
+
     button.disabled = true;
+
     button.textContent =
       "جاري الحفظ...";
+
 
     try {
 
@@ -245,26 +508,31 @@ function showNameScreen(user) {
             credentials:
               "same-origin",
 
-            body: JSON.stringify({
-              displayName
-            })
+            body:
+              JSON.stringify({
+                displayName
+              })
           }
         );
+
 
       const data =
         await response.json();
 
+
       if (!response.ok) {
+
         throw new Error(
           data.error ||
           "حدث خطأ."
         );
+
       }
+
 
       currentUser =
         data.user;
 
-      restoreAuthScreen();
 
       showApp();
 
@@ -272,28 +540,51 @@ function showNameScreen(user) {
 
       await loadChats();
 
+
     } catch (error) {
 
       message.textContent =
-        "❌ " + error.message;
+        "❌ " +
+        error.message;
+
 
       button.disabled = false;
 
       button.textContent =
         "متابعة";
+
     }
 
-  });
+  }
 
-  input.addEventListener("keydown", event => {
 
-    if (event.key === "Enter") {
-      button.click();
+  button.addEventListener(
+    "click",
+    saveName
+  );
+
+
+  input.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+
+        event.preventDefault();
+
+        saveName();
+
+      }
+
     }
+  );
 
-  });
 
-  setTimeout(() => input.focus(), 100);
+  setTimeout(
+    () => input.focus(),
+    100
+  );
+
 }
 
 
@@ -303,24 +594,46 @@ function showNameScreen(user) {
 
 async function loginUser() {
 
-  const email =
-    document
-      .getElementById("emailInput")
-      .value
-      .trim();
+  const emailInput =
+    document.getElementById(
+      "emailInput"
+    );
 
-  const password =
-    document
-      .getElementById("passwordInput")
-      .value;
+  const passwordInput =
+    document.getElementById(
+      "passwordInput"
+    );
 
   const message =
-    document.getElementById("authMessage");
+    document.getElementById(
+      "authMessage"
+    );
 
   const button =
-    document.getElementById("loginBtn");
+    document.getElementById(
+      "loginBtn"
+    );
+
+
+  if (
+    !emailInput ||
+    !passwordInput ||
+    !message ||
+    !button
+  ) {
+    return;
+  }
+
+
+  const email =
+    emailInput.value.trim();
+
+  const password =
+    passwordInput.value;
+
 
   message.textContent = "";
+
 
   if (!isValidEmail(email)) {
 
@@ -330,6 +643,7 @@ async function loginUser() {
     return;
   }
 
+
   if (password.length < 6) {
 
     message.textContent =
@@ -338,10 +652,12 @@ async function loginUser() {
     return;
   }
 
+
   button.disabled = true;
 
   button.textContent =
     "جاري تسجيل الدخول...";
+
 
   try {
 
@@ -359,25 +675,32 @@ async function loginUser() {
           credentials:
             "same-origin",
 
-          body: JSON.stringify({
-            email,
-            password
-          })
+          body:
+            JSON.stringify({
+              email,
+              password
+            })
         }
       );
+
 
     const data =
       await response.json();
 
+
     if (!response.ok) {
+
       throw new Error(
         data.error ||
         "فشل تسجيل الدخول."
       );
+
     }
+
 
     currentUser =
       data.user;
+
 
     if (data.needsName) {
 
@@ -388,22 +711,27 @@ async function loginUser() {
       return;
     }
 
+
     showApp();
 
     updateWelcome();
 
     await loadChats();
 
+
   } catch (error) {
 
     message.textContent =
-      "❌ " + error.message;
+      "❌ " +
+      error.message;
 
     button.disabled = false;
 
     button.textContent =
       "تسجيل الدخول";
+
   }
+
 }
 
 
@@ -413,24 +741,46 @@ async function loginUser() {
 
 async function signupUser() {
 
-  const email =
-    document
-      .getElementById("emailInput")
-      .value
-      .trim();
+  const emailInput =
+    document.getElementById(
+      "emailInput"
+    );
 
-  const password =
-    document
-      .getElementById("passwordInput")
-      .value;
+  const passwordInput =
+    document.getElementById(
+      "passwordInput"
+    );
 
   const message =
-    document.getElementById("authMessage");
+    document.getElementById(
+      "authMessage"
+    );
 
   const button =
-    document.getElementById("signupBtn");
+    document.getElementById(
+      "signupBtn"
+    );
+
+
+  if (
+    !emailInput ||
+    !passwordInput ||
+    !message ||
+    !button
+  ) {
+    return;
+  }
+
+
+  const email =
+    emailInput.value.trim();
+
+  const password =
+    passwordInput.value;
+
 
   message.textContent = "";
+
 
   if (!isValidEmail(email)) {
 
@@ -440,6 +790,7 @@ async function signupUser() {
     return;
   }
 
+
   if (password.length < 6) {
 
     message.textContent =
@@ -448,10 +799,12 @@ async function signupUser() {
     return;
   }
 
+
   button.disabled = true;
 
   button.textContent =
     "جاري إنشاء الحساب...";
+
 
   try {
 
@@ -469,25 +822,32 @@ async function signupUser() {
           credentials:
             "same-origin",
 
-          body: JSON.stringify({
-            email,
-            password
-          })
+          body:
+            JSON.stringify({
+              email,
+              password
+            })
         }
       );
+
 
     const data =
       await response.json();
 
+
     if (!response.ok) {
+
       throw new Error(
         data.error ||
         "فشل إنشاء الحساب."
       );
+
     }
+
 
     currentUser =
       data.user;
+
 
     if (data.needsName) {
 
@@ -498,22 +858,27 @@ async function signupUser() {
       return;
     }
 
+
     showApp();
 
     updateWelcome();
 
     await loadChats();
 
+
   } catch (error) {
 
     message.textContent =
-      "❌ " + error.message;
+      "❌ " +
+      error.message;
 
     button.disabled = false;
 
     button.textContent =
       "إنشاء حساب";
+
   }
+
 }
 
 
@@ -529,10 +894,12 @@ async function checkAuth() {
       await fetch(
         "/api/auth/me",
         {
+          method: "GET",
           credentials:
             "same-origin"
         }
       );
+
 
     if (!response.ok) {
 
@@ -540,11 +907,15 @@ async function checkAuth() {
 
       showAuth();
 
+      restoreAuthScreen();
+
       return;
     }
 
+
     const data =
       await response.json();
+
 
     if (!data.authenticated) {
 
@@ -552,11 +923,15 @@ async function checkAuth() {
 
       showAuth();
 
+      restoreAuthScreen();
+
       return;
     }
 
+
     currentUser =
       data.user;
+
 
     if (!currentUser.displayName) {
 
@@ -567,21 +942,29 @@ async function checkAuth() {
       return;
     }
 
+
     showApp();
 
     updateWelcome();
 
     await loadChats();
 
+
   } catch (error) {
 
     console.error(
-      "Auth check error:",
+      "AUTH CHECK ERROR:",
       error
     );
 
+    currentUser = null;
+
     showAuth();
+
+    restoreAuthScreen();
+
   }
+
 }
 
 
@@ -592,24 +975,34 @@ async function checkAuth() {
 function updateWelcome() {
 
   const element =
-    document.getElementById("welcome");
+    document.getElementById(
+      "welcome"
+    );
 
-  if (!element) return;
 
-  const name =
-    currentUser?.displayName;
+  if (!element) {
+    return;
+  }
+
 
   const title =
     element.querySelector("h1");
 
-  if (title) {
 
-    title.textContent =
-      name
-        ? `أهلاً يا ${name} 👑`
-        : "أهلاً بك في KingGPT 👑";
-
+  if (!title) {
+    return;
   }
+
+
+  const name =
+    currentUser?.displayName;
+
+
+  title.textContent =
+    name
+      ? `أهلاً يا ${name} 👑`
+      : "أهلاً بك في KingGPT 👑";
+
 }
 
 
@@ -620,25 +1013,38 @@ function updateWelcome() {
 function escapeHTML(text) {
 
   const div =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
-  div.textContent = text;
+  div.textContent =
+    String(text ?? "");
 
   return div.innerHTML;
+
 }
 
 
 function renderMarkdown(text) {
 
-  if (typeof marked === "undefined") {
+  if (
+    typeof marked === "undefined"
+  ) {
     return escapeHTML(text);
   }
 
+
   const temp =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   temp.innerHTML =
-    marked.parse(text);
+    marked.parse(
+      String(text ?? "")
+    );
+
 
   temp
     .querySelectorAll("pre")
@@ -647,45 +1053,66 @@ function renderMarkdown(text) {
       const code =
         pre.querySelector("code");
 
-      if (!code) return;
+
+      if (!code) {
+        return;
+      }
+
 
       const wrapper =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       wrapper.className =
         "code-block-wrapper";
 
+
       const header =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       header.className =
         "code-block-header";
 
+
       const language =
-        document.createElement("span");
+        document.createElement(
+          "span"
+        );
 
       language.className =
         "code-language";
 
+
       const match =
         (code.className || "")
-          .match(/language-([\w-]+)/);
+          .match(
+            /language-([\w-]+)/
+          );
+
 
       language.textContent =
         match
           ? match[1]
           : "Code";
 
-      const copyBtn =
-        document.createElement("button");
 
-      copyBtn.type = "button";
+      const copyBtn =
+        document.createElement(
+          "button"
+        );
+
+      copyBtn.type =
+        "button";
 
       copyBtn.className =
         "copy-code-btn";
 
       copyBtn.textContent =
         "📋 Copy";
+
 
       copyBtn.addEventListener(
         "click",
@@ -700,10 +1127,17 @@ function renderMarkdown(text) {
             copyBtn.textContent =
               "✅ Copied!";
 
-            setTimeout(() => {
-              copyBtn.textContent =
-                "📋 Copy";
-            }, 2000);
+
+            setTimeout(
+              () => {
+
+                copyBtn.textContent =
+                  "📋 Copy";
+
+              },
+              2000
+            );
+
 
           } catch {
 
@@ -715,20 +1149,35 @@ function renderMarkdown(text) {
         }
       );
 
-      header.appendChild(language);
-      header.appendChild(copyBtn);
+
+      header.appendChild(
+        language
+      );
+
+      header.appendChild(
+        copyBtn
+      );
+
 
       pre.parentNode.insertBefore(
         wrapper,
         pre
       );
 
-      wrapper.appendChild(header);
-      wrapper.appendChild(pre);
+
+      wrapper.appendChild(
+        header
+      );
+
+      wrapper.appendChild(
+        pre
+      );
 
     });
 
+
   return temp.innerHTML;
+
 }
 
 
@@ -736,24 +1185,40 @@ function renderMarkdown(text) {
 // ADD MESSAGE
 // ==================================================
 
-function addMessage(text, type) {
+function addMessage(
+  text,
+  type
+) {
+
+  if (!chatArea) {
+    return null;
+  }
+
 
   const message =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   message.className =
     `message ${type}`;
 
+
   const messageText =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   messageText.className =
     "message-text";
 
+
   if (type === "user") {
 
     messageText.textContent =
-      text;
+      String(text ?? "");
 
   } else {
 
@@ -762,18 +1227,23 @@ function addMessage(text, type) {
 
   }
 
+
   message.appendChild(
     messageText
   );
+
 
   chatArea.appendChild(
     message
   );
 
+
   chatArea.scrollTop =
     chatArea.scrollHeight;
 
+
   return message;
+
 }
 
 
@@ -788,12 +1258,17 @@ function getSidebarList() {
       "chatList"
     );
 
+
   if (list) {
     return list;
   }
 
+
   list =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   list.id =
     "chatList";
@@ -801,13 +1276,20 @@ function getSidebarList() {
   list.className =
     "chat-list";
 
+
   if (sidebar) {
     sidebar.appendChild(list);
   }
 
+
   return list;
+
 }
 
+
+// ==================================================
+// LOAD CHATS
+// ==================================================
 
 async function loadChats() {
 
@@ -815,14 +1297,17 @@ async function loadChats() {
     return;
   }
 
+
   const list =
     getSidebarList();
+
 
   list.innerHTML = `
     <div class="chat-loading">
       ⏳ جاري تحميل المحادثات...
     </div>
   `;
+
 
   try {
 
@@ -831,12 +1316,15 @@ async function loadChats() {
         "/api/chats",
         {
           method: "GET",
-          credentials: "same-origin"
+          credentials:
+            "same-origin"
         }
       );
 
+
     const data =
       await response.json();
+
 
     if (!response.ok) {
 
@@ -847,9 +1335,14 @@ async function loadChats() {
 
     }
 
+
     list.innerHTML = "";
 
-    if (!data.chats || data.chats.length === 0) {
+
+    if (
+      !Array.isArray(data.chats) ||
+      data.chats.length === 0
+    ) {
 
       list.innerHTML = `
         <div class="chat-empty">
@@ -860,14 +1353,18 @@ async function loadChats() {
       return;
     }
 
-    data.chats.forEach(chat => {
 
-      addChatToSidebar(
-        chat,
-        false
-      );
+    data.chats.forEach(
+      chat => {
 
-    });
+        addChatToSidebar(
+          chat,
+          false
+        );
+
+      }
+    );
+
 
   } catch (error) {
 
@@ -876,6 +1373,7 @@ async function loadChats() {
       error
     );
 
+
     list.innerHTML = `
       <div class="chat-empty">
         ❌ فشل تحميل المحادثات
@@ -883,8 +1381,13 @@ async function loadChats() {
     `;
 
   }
+
 }
 
+
+// ==================================================
+// SIDEBAR CHAT ITEM
+// ==================================================
 
 function addChatToSidebar(
   chat,
@@ -894,19 +1397,26 @@ function addChatToSidebar(
   const list =
     getSidebarList();
 
+
   const old =
     list.querySelector(
       `[data-chat-id="${chat.id}"]`
     );
 
+
   if (old) {
     old.remove();
   }
 
-  const item =
-    document.createElement("button");
 
-  item.type = "button";
+  const item =
+    document.createElement(
+      "button"
+    );
+
+
+  item.type =
+    "button";
 
   item.className =
     "chat-item";
@@ -914,19 +1424,31 @@ function addChatToSidebar(
   item.dataset.chatId =
     String(chat.id);
 
+
   item.innerHTML = `
     <span class="chat-item-icon">💬</span>
     <span class="chat-item-title"></span>
   `;
 
+
   item.querySelector(
     ".chat-item-title"
   ).textContent =
-    chat.title || "محادثة جديدة";
+    chat.title ||
+    "محادثة جديدة";
 
-  if (Number(chat.id) === currentChatId) {
-    item.classList.add("active");
+
+  if (
+    Number(chat.id) ===
+    currentChatId
+  ) {
+
+    item.classList.add(
+      "active"
+    );
+
   }
+
 
   item.addEventListener(
     "click",
@@ -939,13 +1461,19 @@ function addChatToSidebar(
     }
   );
 
+
   if (prepend) {
     list.prepend(item);
   } else {
     list.appendChild(item);
   }
+
 }
 
+
+// ==================================================
+// ACTIVE CHAT
+// ==================================================
 
 function updateActiveChat() {
 
@@ -957,8 +1485,9 @@ function updateActiveChat() {
 
       item.classList.toggle(
         "active",
-        Number(item.dataset.chatId) ===
-        currentChatId
+        Number(
+          item.dataset.chatId
+        ) === currentChatId
       );
 
     });
@@ -976,6 +1505,7 @@ async function createChat() {
     return null;
   }
 
+
   try {
 
     const response =
@@ -992,15 +1522,18 @@ async function createChat() {
           credentials:
             "same-origin",
 
-          body: JSON.stringify({
-            title:
-              "محادثة جديدة"
-          })
+          body:
+            JSON.stringify({
+              title:
+                "محادثة جديدة"
+            })
         }
       );
 
+
     const data =
       await response.json();
+
 
     if (!response.ok) {
 
@@ -1011,17 +1544,22 @@ async function createChat() {
 
     }
 
+
     currentChatId =
       Number(data.chat.id);
+
 
     addChatToSidebar(
       data.chat,
       true
     );
 
+
     updateActiveChat();
 
+
     return data.chat;
+
 
   } catch (error) {
 
@@ -1031,7 +1569,9 @@ async function createChat() {
     );
 
     return null;
+
   }
+
 }
 
 
@@ -1039,7 +1579,9 @@ async function createChat() {
 // LOAD CHAT
 // ==================================================
 
-async function loadChat(chatId) {
+async function loadChat(
+  chatId
+) {
 
   try {
 
@@ -1048,12 +1590,15 @@ async function loadChat(chatId) {
         `/api/chats/${chatId}/messages`,
         {
           method: "GET",
-          credentials: "same-origin"
+          credentials:
+            "same-origin"
         }
       );
 
+
     const data =
       await response.json();
+
 
     if (!response.ok) {
 
@@ -1064,13 +1609,17 @@ async function loadChat(chatId) {
 
     }
 
+
     currentChatId =
       Number(chatId);
 
-    chatArea.innerHTML = "";
+
+    chatArea.innerHTML =
+      "";
+
 
     if (
-      !data.messages ||
+      !Array.isArray(data.messages) ||
       data.messages.length === 0
     ) {
 
@@ -1079,39 +1628,48 @@ async function loadChat(chatId) {
           class="welcome"
           id="welcome"
         >
+
           <div class="big-logo">
             K
           </div>
 
           <h1>
-            ${currentUser?.displayName
-              ? `أهلاً يا ${currentUser.displayName} 👑`
-              : "أهلاً بك في KingGPT 👑"
+            ${
+              currentUser?.displayName
+                ? `أهلاً يا ${escapeHTML(
+                    currentUser.displayName
+                  )} 👑`
+                : "أهلاً بك في KingGPT 👑"
             }
           </h1>
 
           <p>
             إزاي أقدر أساعدك؟
           </p>
+
         </div>
       `;
 
     } else {
 
-      data.messages.forEach(message => {
+      data.messages.forEach(
+        message => {
 
-        addMessage(
-          message.content,
-          message.role
-        );
+          addMessage(
+            message.content,
+            message.role
+          );
 
-      });
+        }
+      );
 
     }
+
 
     updateActiveChat();
 
     closeSidebar();
+
 
   } catch (error) {
 
@@ -1120,11 +1678,13 @@ async function loadChat(chatId) {
       error
     );
 
+
     alert(
       "❌ فشل تحميل المحادثة."
     );
 
   }
+
 }
 
 
@@ -1134,12 +1694,19 @@ async function loadChat(chatId) {
 
 async function sendMessage() {
 
+  if (!messageInput) {
+    return;
+  }
+
+
   const message =
     messageInput.value.trim();
+
 
   if (!message) {
     return;
   }
+
 
   if (!currentUser) {
 
@@ -1152,14 +1719,16 @@ async function sendMessage() {
   }
 
 
-  // ================================================
-  // CREATE CHAT IF NEEDED
-  // ================================================
-
-  if (!Number.isInteger(currentChatId)) {
+  // إنشاء محادثة تلقائيًا
+  if (
+    !Number.isInteger(
+      currentChatId
+    )
+  ) {
 
     const chat =
       await createChat();
+
 
     if (!chat) {
 
@@ -1179,9 +1748,12 @@ async function sendMessage() {
       "welcome"
     );
 
+
   if (currentWelcome) {
+
     currentWelcome.style.display =
       "none";
+
   }
 
 
@@ -1190,10 +1762,16 @@ async function sendMessage() {
     "user"
   );
 
-  messageInput.value = "";
+
+  messageInput.value =
+    "";
 
   messageInput.style.height =
     "auto";
+
+
+  sendBtn.disabled =
+    true;
 
 
   const loading =
@@ -1219,14 +1797,12 @@ async function sendMessage() {
           credentials:
             "same-origin",
 
-          body: JSON.stringify({
-
-            message,
-
-            chatId:
-              currentChatId
-
-          })
+          body:
+            JSON.stringify({
+              message,
+              chatId:
+                currentChatId
+            })
         }
       );
 
@@ -1236,26 +1812,27 @@ async function sendMessage() {
 
 
     const messageText =
-      loading.querySelector(
+      loading?.querySelector(
         ".message-text"
       );
 
 
     if (!response.ok) {
 
-      messageText.textContent =
-        "❌ " +
-        (
-          data.error ||
-          "حدث خطأ أثناء الاتصال."
-        );
+      if (messageText) {
+
+        messageText.textContent =
+          "❌ " +
+          (
+            data.error ||
+            "حدث خطأ أثناء الاتصال."
+          );
+
+      }
 
       return;
     }
 
-
-    // مهم:
-    // Backend ممكن يرجع chatId جديد
 
     if (
       Number.isInteger(
@@ -1269,37 +1846,53 @@ async function sendMessage() {
     }
 
 
-    messageText.innerHTML =
-      renderMarkdown(
-        data.reply ||
-        "لم يصل رد."
-      );
+    if (messageText) {
+
+      messageText.innerHTML =
+        renderMarkdown(
+          data.reply ||
+          "لم يصل رد."
+        );
+
+    }
 
 
-    // تحديث عنوان المحادثة
     await loadChats();
 
     updateActiveChat();
 
+
   } catch (error) {
 
     console.error(
-      "KingGPT Error:",
+      "KINGGPT ERROR:",
       error
     );
 
+
     const messageText =
-      loading.querySelector(
+      loading?.querySelector(
         ".message-text"
       );
 
-    messageText.textContent =
-      "❌ حصل خطأ أثناء الحصول على الرد.";
+
+    if (messageText) {
+
+      messageText.textContent =
+        "❌ حصل خطأ أثناء الحصول على الرد.";
+
+    }
+
+  } finally {
+
+    sendBtn.disabled =
+      false;
+
+    chatArea.scrollTop =
+      chatArea.scrollHeight;
 
   }
 
-  chatArea.scrollTop =
-    chatArea.scrollHeight;
 }
 
 
@@ -1307,112 +1900,143 @@ async function sendMessage() {
 // NEW CHAT
 // ==================================================
 
-newChat.addEventListener(
-  "click",
-  async () => {
+if (newChat) {
 
-    currentChatId = null;
+  newChat.addEventListener(
+    "click",
+    async () => {
 
-    chatArea.innerHTML = `
-      <div
-        class="welcome"
-        id="welcome"
-      >
+      currentChatId =
+        null;
 
-        <div class="big-logo">
-          K
+
+      chatArea.innerHTML = `
+        <div
+          class="welcome"
+          id="welcome"
+        >
+
+          <div class="big-logo">
+            K
+          </div>
+
+          <h1>
+            أهلاً يا ${
+              currentUser?.displayName
+                ? escapeHTML(
+                    currentUser.displayName
+                  )
+                : "بك"
+            } 👑
+          </h1>
+
+          <p>
+            إزاي أقدر أساعدك؟
+          </p>
+
         </div>
+      `;
 
-        <h1>
-          أهلاً يا ${
-            currentUser?.displayName ||
-            "بك"
-          } 👑
-        </h1>
 
-        <p>
-          إزاي أقدر أساعدك؟
-        </p>
+      messageInput.value =
+        "";
 
-      </div>
-    `;
+      messageInput.style.height =
+        "auto";
 
-    messageInput.value = "";
 
-    messageInput.style.height =
-      "auto";
+      updateActiveChat();
 
-    updateActiveChat();
+      closeSidebar();
 
-    closeSidebar();
+    }
+  );
 
-  }
-);
+}
 
 
 // ==================================================
 // LOGOUT
 // ==================================================
 
-logoutBtn.addEventListener(
-  "click",
-  async () => {
+if (logoutBtn) {
 
-    try {
+  logoutBtn.addEventListener(
+    "click",
+    async () => {
 
-      await fetch(
-        "/api/auth/logout",
-        {
-          method: "POST",
-          credentials:
-            "same-origin"
-        }
-      );
+      try {
 
-    } catch (error) {
+        await fetch(
+          "/api/auth/logout",
+          {
+            method: "POST",
+            credentials:
+              "same-origin"
+          }
+        );
 
-      console.error(
-        "Logout error:",
-        error
-      );
+      } catch (error) {
+
+        console.error(
+          "LOGOUT ERROR:",
+          error
+        );
+
+      }
+
+
+      currentUser =
+        null;
+
+      currentChatId =
+        null;
+
+
+      showAuth();
+
+      restoreAuthScreen();
+
+      closeSidebar();
+
+
+      if (chatArea) {
+
+        chatArea.innerHTML = `
+          <div
+            class="welcome"
+            id="welcome"
+          >
+
+            <div class="big-logo">
+              K
+            </div>
+
+            <h1>
+              أهلاً بك في KingGPT 👑
+            </h1>
+
+            <p>
+              إزاي أقدر أساعدك؟
+            </p>
+
+          </div>
+        `;
+
+      }
+
+
+      if (messageInput) {
+
+        messageInput.value =
+          "";
+
+      }
 
     }
+  );
 
-    currentUser = null;
-
-    currentChatId = null;
-
-    showAuth();
-
-    restoreAuthScreen();
-
-    closeSidebar();
-
-    chatArea.innerHTML = `
-      <div
-        class="welcome"
-        id="welcome"
-      >
-
-        <div class="big-logo">
-          K
-        </div>
-
-        <h1>
-          أهلاً بك في KingGPT 👑
-        </h1>
-
-        <p>
-          إزاي أقدر أساعدك؟
-        </p>
-
-      </div>
-    `;
-
-    messageInput.value = "";
-
-  }
-);
+}
 
 
 // ==================================================
@@ -1421,10 +2045,17 @@ logoutBtn.addEventListener(
 
 function openSidebar() {
 
-  sidebar.classList.add("open");
+  if (sidebar) {
+    sidebar.classList.add(
+      "open"
+    );
+  }
+
 
   if (overlay) {
-    overlay.classList.add("active");
+    overlay.classList.add(
+      "active"
+    );
   }
 
 }
@@ -1432,33 +2063,50 @@ function openSidebar() {
 
 function closeSidebar() {
 
-  sidebar.classList.remove("open");
+  if (sidebar) {
+
+    sidebar.classList.remove(
+      "open"
+    );
+
+  }
+
 
   if (overlay) {
-    overlay.classList.remove("active");
+
+    overlay.classList.remove(
+      "active"
+    );
+
   }
 
 }
 
 
-menuBtn.addEventListener(
-  "click",
-  () => {
+if (menuBtn) {
 
-    if (
-      sidebar.classList.contains("open")
-    ) {
+  menuBtn.addEventListener(
+    "click",
+    () => {
 
-      closeSidebar();
+      if (
+        sidebar?.classList.contains(
+          "open"
+        )
+      ) {
 
-    } else {
+        closeSidebar();
 
-      openSidebar();
+      } else {
+
+        openSidebar();
+
+      }
 
     }
+  );
 
-  }
-);
+}
 
 
 if (overlay) {
@@ -1475,181 +2123,62 @@ if (overlay) {
 // SEND BUTTON
 // ==================================================
 
-sendBtn.addEventListener(
-  "click",
-  sendMessage
-);
+if (sendBtn) {
+
+  sendBtn.addEventListener(
+    "click",
+    sendMessage
+  );
+
+}
 
 
-messageInput.addEventListener(
-  "keydown",
-  event => {
+// ==================================================
+// ENTER TO SEND
+// ==================================================
 
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
+if (messageInput) {
 
-      event.preventDefault();
+  messageInput.addEventListener(
+    "keydown",
+    event => {
 
-      sendMessage();
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        sendMessage();
+
+      }
 
     }
+  );
 
-  }
-);
+}
 
 
 // ==================================================
 // TEXTAREA RESIZE
 // ==================================================
 
-messageInput.addEventListener(
-  "input",
-  () => {
+if (messageInput) {
 
-    messageInput.style.height =
-      "auto";
-
-    messageInput.style.height =
-      Math.min(
-        messageInput.scrollHeight,
-        140
-      ) + "px";
-
-  }
-);
-
-
-// ==================================================
-// PASSWORD RESET
-// ==================================================
-
-const resetCard =
-  document.getElementById("resetCard");
-
-const loginCard =
-  document.getElementById("loginCard");
-
-const backToLoginBtn =
-  document.getElementById(
-    "backToLoginBtn"
-  );
-
-const resetSendBtn =
-  document.getElementById(
-    "resetSendBtn"
-  );
-
-const resetEmailInput =
-  document.getElementById(
-    "resetEmailInput"
-  );
-
-const resetMessage =
-  document.getElementById(
-    "resetMessage"
-  );
-
-
-const forgotBtn =
-  document.getElementById(
-    "forgotBtn"
-  );
-
-
-if (forgotBtn) {
-
-  forgotBtn.addEventListener(
-    "click",
+  messageInput.addEventListener(
+    "input",
     () => {
 
-      if (!loginCard || !resetCard) {
-        return;
-      }
-
-      loginCard.style.display =
-        "none";
-
-      resetCard.style.display =
-        "block";
-
-      if (resetEmailInput) {
-        resetEmailInput.value = "";
-        resetEmailInput.focus();
-      }
-
-      if (resetMessage) {
-        resetMessage.textContent = "";
-      }
-
-    }
-  );
-
-}
+      messageInput.style.height =
+        "auto";
 
 
-if (backToLoginBtn) {
-
-  backToLoginBtn.addEventListener(
-    "click",
-    () => {
-
-      resetCard.style.display =
-        "none";
-
-      loginCard.style.display =
-        "block";
-
-      resetMessage.textContent =
-        "";
-
-    }
-  );
-
-}
-
-
-if (resetSendBtn) {
-
-  resetSendBtn.addEventListener(
-    "click",
-    async () => {
-
-      const email =
-        resetEmailInput.value.trim();
-
-      resetMessage.textContent =
-        "";
-
-      if (!isValidEmail(email)) {
-
-        resetMessage.textContent =
-          "❌ اكتب بريد إلكتروني صحيح.";
-
-        return;
-      }
-
-      resetSendBtn.disabled =
-        true;
-
-      resetSendBtn.textContent =
-        "جاري الإرسال...";
-
-      try {
-
-        resetMessage.textContent =
-          "📧 نظام إرسال رابط الاسترجاع سيتم تفعيله قريبًا.";
-
-      } finally {
-
-        resetSendBtn.disabled =
-          false;
-
-        resetSendBtn.textContent =
-          "إرسال رابط الاسترجاع";
-
-      }
+      messageInput.style.height =
+        Math.min(
+          messageInput.scrollHeight,
+          140
+        ) + "px";
 
     }
   );
@@ -1705,6 +2234,7 @@ if (settingsBtn) {
 
       let saved = {};
 
+
       try {
 
         saved =
@@ -1714,19 +2244,30 @@ if (settingsBtn) {
             ) || "{}"
           );
 
-      } catch {}
+      } catch {
+
+        saved = {};
+
+      }
+
 
       if (aboutUserInput) {
+
         aboutUserInput.value =
           saved.aboutUser || "";
+
       }
+
 
       if (responseStyleInput) {
+
         responseStyleInput.value =
           saved.responseStyle || "";
+
       }
 
-      settingsScreen.classList.remove(
+
+      settingsScreen?.classList.remove(
         "app-hidden"
       );
 
@@ -1742,7 +2283,7 @@ if (settingsBackBtn) {
     "click",
     () => {
 
-      settingsScreen.classList.add(
+      settingsScreen?.classList.add(
         "app-hidden"
       );
 
@@ -1768,22 +2309,30 @@ if (saveInstructionsBtn) {
 
       };
 
+
       localStorage.setItem(
         "kinggpt_custom_instructions",
-        JSON.stringify(instructions)
+        JSON.stringify(
+          instructions
+        )
       );
+
 
       if (instructionsMessage) {
 
         instructionsMessage.textContent =
           "✓ تم حفظ التعليمات بنجاح";
 
-        setTimeout(() => {
 
-          instructionsMessage.textContent =
-            "";
+        setTimeout(
+          () => {
 
-        }, 2500);
+            instructionsMessage.textContent =
+              "";
+
+          },
+          2500
+        );
 
       }
 
@@ -1822,6 +2371,7 @@ const notificationsToggle =
     "notificationsToggle"
   );
 
+
 const SETTINGS_KEY =
   "kinggpt_extra_settings";
 
@@ -1829,6 +2379,7 @@ const SETTINGS_KEY =
 function loadExtraSettings() {
 
   let settings = {};
+
 
   try {
 
@@ -1839,31 +2390,54 @@ function loadExtraSettings() {
         ) || "{}"
       );
 
-  } catch {}
+  } catch {
+
+    settings = {};
+
+  }
+
 
   if (modelSelect) {
+
     modelSelect.value =
-      settings.model || "kinggpt";
+      settings.model ||
+      "kinggpt";
+
   }
+
 
   if (creativityRange) {
+
     creativityRange.value =
-      settings.creativity ?? 50;
+      settings.creativity ??
+      50;
+
   }
+
 
   if (responseLengthSelect) {
+
     responseLengthSelect.value =
-      settings.responseLength || "medium";
+      settings.responseLength ||
+      "medium";
+
   }
+
 
   if (languageSelect) {
+
     languageSelect.value =
-      settings.language || "ar";
+      settings.language ||
+      "ar";
+
   }
 
+
   if (notificationsToggle) {
+
     notificationsToggle.checked =
       settings.notifications !== false;
+
   }
 
 }
@@ -1876,6 +2450,7 @@ function saveExtraSetting(
 
   let settings = {};
 
+
   try {
 
     settings =
@@ -1885,14 +2460,22 @@ function saveExtraSetting(
         ) || "{}"
       );
 
-  } catch {}
+  } catch {
+
+    settings = {};
+
+  }
+
 
   settings[key] =
     value;
 
+
   localStorage.setItem(
     SETTINGS_KEY,
-    JSON.stringify(settings)
+    JSON.stringify(
+      settings
+    )
   );
 
 }
@@ -1989,7 +2572,7 @@ loadExtraSettings();
 
 
 // ==================================================
-// START
+// START KINGGPT
 // ==================================================
 
 restoreAuthScreen();
