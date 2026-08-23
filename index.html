@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>KingGPT</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ================================
+       AUTH
+  ================================= -->
+
+  <section class="auth-screen" id="authScreen">
+
+    <!-- LOGIN -->
+
+    <div class="auth-card" id="loginCard">
+
+      <div class="auth-logo">
+        <img
+          src="1787430604018.png"
+          alt="KingGPT Logo"
+        >
+      </div>
+
+      <h1>مرحبًا بك في KingGPT 👑</h1>
+
+      <p class="auth-subtitle">
+        سجّل الدخول للمتابعة
+      </p>
+
+      <button
+        class="google-btn"
+        id="googleBtn"
+        type="button"
+      >
+        <span class="google-icon">G</span>
+        <span>المتابعة باستخدام Google</span>
+      </button>
+
+      <div class="divider">
+        <span>أو</span>
+      </div>
+
+      <input
+        type="email"
+        id="emailInput"
+        placeholder="البريد الإلكتروني"
+        autocomplete="email"
+        inputmode="email"
+      >
+
+      <input
+        type="password"
+        id="passwordInput"
+        placeholder="كلمة المرور"
+        autocomplete="current-password"
+      >
+
+      <button
+        class="auth-btn"
+        id="loginBtn"
+        type="button"
+      >
+        تسجيل الدخول
+      </button>
+
+      <button
+        class="forgot-btn"
+        id="forgotBtn"
+        type="button"
+      >
+        نسيت كلمة المرور؟
+      </button>
+
+      <p class="auth-switch">
+        ليس لديك حساب؟
+
+        <button
+          id="signupBtn"
+          type="button"
+        >
+          إنشاء حساب
+        </button>
+      </p>
+
+      <p
+        class="auth-message"
+        id="authMessage"
+      ></p>
+
+    </div>
+
+
+    <!-- PASSWORD RESET -->
+
+    <div
+      class="auth-card reset-card"
+      id="resetCard"
+      style="display: none;"
+    >
+
+      <div class="auth-logo">
+
+        <img
+          src="1787430604018.png"
+          alt="KingGPT Logo"
+        >
+
+      </div>
+
+      <h1>
+        استرجاع كلمة المرور 🔐
+      </h1>
+
+      <p class="auth-subtitle">
+        أدخل بريدك الإلكتروني لإرسال رابط استرجاع كلمة المرور.
+      </p>
+
+      <input
+        type="email"
+        id="resetEmailInput"
+        placeholder="البريد الإلكتروني"
+        autocomplete="email"
+        inputmode="email"
+      >
+
+      <button
+        class="auth-btn"
+        id="resetSendBtn"
+        type="button"
+      >
+        إرسال رابط الاسترجاع
+      </button>
+
+      <p
+        class="auth-message"
+        id="resetMessage"
+      ></p>
+
+      <button
+        class="forgot-btn"
+        id="backToLoginBtn"
+        type="button"
+      >
+        ← العودة لتسجيل الدخول
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================================
+       SETTINGS
+  ================================= -->
+
+  <section
+    class="settings-screen app-hidden"
+    id="settingsScreen"
+  >
+
+    <div class="settings-card">
+
+      <!-- BACK -->
+
+      <button
+        class="settings-back"
+        id="settingsBackBtn"
+        type="button"
+      >
+        ← العودة
+      </button>
+
+
+      <!-- HEADER -->
+
+      <div class="settings-header">
+
+        <div class="settings-icon">
+          ⚙️
+        </div>
+
+        <div>
+
+          <h1>
+            الإعدادات
+          </h1>
+
+          <p>
+            خصص تجربة KingGPT على طريقتك.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================================
+           CUSTOM INSTRUCTIONS
+      ================================= -->
+
+      <div class="settings-section">
+
+        <h2>
+          🧠 Custom Instructions
+        </h2>
+
+        <p class="settings-description">
+          أخبر KingGPT عنك وعن الطريقة التي تريد أن يرد بها عليك.
+        </p>
+
+        <label for="aboutUserInput">
+          ماذا تريد من KingGPT أن يعرف عنك؟
+        </label>
+
+        <textarea
+          id="aboutUserInput"
+          rows="5"
+          placeholder="مثلاً: أنا أحب البرمجة والألعاب وأفضل الشرح البسيط..."
+        ></textarea>
+
+        <label for="responseStyleInput">
+          كيف تريد من KingGPT أن يرد عليك؟
+        </label>
+
+        <textarea
+          id="responseStyleInput"
+          rows="5"
+          placeholder="مثلاً: أريد إجابات مختصرة وواضحة وباللهجة المصرية..."
+        ></textarea>
+
+        <button
+          class="auth-btn"
+          id="saveInstructionsBtn"
+          type="button"
+        >
+          💾 حفظ التعليمات
+        </button>
+
+        <p
+          class="auth-message"
+          id="instructionsMessage"
+        ></p>
+
+      </div>
+
+
+      <!-- ================================
+           ACCOUNT
+      ================================= -->
+
+      <div class="settings-section">
+
+        <h2>
+          👤 الحساب
+        </h2>
+
+        <div class="settings-row">
+
+          <span>
+            البريد الإلكتروني
+          </span>
+
+          <strong id="settingsEmail">
+            —
+          </strong>
+
+        </div>
+
+        <div class="settings-row">
+
+          <span>
+            اسم العرض
+          </span>
+
+          <strong id="settingsDisplayName">
+            —
+          </strong>
+
+        </div>
+
+        <button
+          class="settings-action"
+          id="changePasswordBtn"
+          type="button"
+        >
+          🔑 تغيير كلمة المرور
+        </button>
+
+      </div>
+
+
+      <!-- ================================
+           AI SETTINGS
+      ================================= -->
+
+      <div class="settings-section">
+
+        <h2>
+          🤖 إعدادات الذكاء الاصطناعي
+        </h2>
+
+        <label for="modelSelect">
+          النموذج
+        </label>
+
+        <select id="modelSelect">
+
+          <option value="kinggpt">
+            KingGPT
+          </option>
+
+          <option value="fast">
+            KingGPT Fast
+          </option>
+
+        </select>
+
+
+        <label for="creativityRange">
+          مستوى الإبداع
+        </label>
+
+        <input
+          type="range"
+          id="creativityRange"
+          min="0"
+          max="100"
+          value="50"
+        >
+
+
+        <label for="responseLengthSelect">
+          طول الرد
+        </label>
+
+        <select id="responseLengthSelect">
+
+          <option value="short">
+            مختصر
+          </option>
+
+          <option
+            value="medium"
+            selected
+          >
+            متوسط
+          </option>
+
+          <option value="long">
+            مفصل
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- ================================
+           LANGUAGE
+      ================================= -->
+
+      <div class="settings-section">
+
+        <h2>
+          🌐 اللغة
+        </h2>
+
+        <select id="languageSelect">
+
+          <option
+            value="ar"
+            selected
+          >
+            العربية
+          </option>
+
+          <option value="en">
+            English
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- ================================
+           NOTIFICATIONS
+      ================================= -->
+
+      <div class="settings-section">
+
+        <h2>
+          🔔 الإشعارات
+        </h2>
+
+        <label class="settings-toggle">
+
+          <span>
+            الإشعارات
+          </span>
+
+          <input
+            type="checkbox"
+            id="notificationsToggle"
+            checked
+          >
+
+          <span class="toggle-slider"></span>
+
+        </label>
+
+      </div>
+
+
+      <!-- ================================
+           SECURITY
+      ================================= -->
+
+      <div class="settings-section">
+
+        <h2>
+          🔐 الأمان
+        </h2>
+
+        <button
+          class="settings-action"
+          id="logoutAllBtn"
+          type="button"
+        >
+          🚪 تسجيل الخروج من كل الأجهزة
+        </button>
+
+      </div>
+
+
+      <!-- ================================
+           DATA
+      ================================= -->
+
+      <div class="settings-section">
+
+        <h2>
+          🗑️ البيانات
+        </h2>
+
+        <button
+          class="settings-action danger"
+          id="clearChatsBtn"
+          type="button"
+        >
+          🗑️ مسح جميع المحادثات
+        </button>
+
+        <button
+          class="settings-action danger"
+          id="deleteAccountBtn"
+          type="button"
+        >
+          ⚠️ حذف الحساب
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================================
+       APP
+  ================================= -->
+
+  <div
+    id="app"
+    class="app-hidden"
+  >
+
+    <!-- SIDEBAR -->
+
+    <aside
+      class="sidebar"
+      id="sidebar"
+    >
+
+      <button
+        class="close-sidebar"
+        type="button"
+        onclick="closeSidebar()"
+      >
+        إغلاق
+      </button>
+
+
+      <div class="logo">
+
+        <div class="logo-icon">
+
+          <img
+            src="1787430604018.png"
+            alt="KingGPT Logo"
+          >
+
+        </div>
+
+        <span>
+          KingGPT
+        </span>
+
+      </div>
+
+
+      <button
+        class="new-chat"
+        id="newChat"
+        type="button"
+      >
+        ＋ محادثة جديدة
+      </button>
+
+
+      <div class="section-title">
+        الدردشات
+      </div>
+
+
+      <div
+        class="chats"
+        id="chats"
+      >
+
+        <div class="chat active">
+          💬 محادثة جديدة
+        </div>
+
+      </div>
+
+
+      <div class="sidebar-bottom">
+
+        <button
+          class="side-button"
+          id="settingsBtn"
+          type="button"
+        >
+          ⚙️ الإعدادات
+        </button>
+
+        <button
+          class="side-button"
+          id="logoutBtn"
+          type="button"
+        >
+          🚪 تسجيل الخروج
+        </button>
+
+      </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+      <header class="topbar">
+
+        <button
+          class="menu-btn"
+          id="menuBtn"
+          type="button"
+          aria-label="فتح القائمة"
+        >
+          ☰
+        </button>
+
+        <div class="mobile-title">
+          KingGPT
+        </div>
+
+      </header>
+
+
+      <!-- CHAT -->
+
+      <section
+        class="chat-area"
+        id="chatArea"
+      >
+
+        <div
+          class="welcome"
+          id="welcome"
+        >
+
+          <div class="big-logo">
+
+            <img
+              src="1787430604018.png"
+              alt="KingGPT Logo"
+            >
+
+          </div>
+
+          <h1>
+            أهلاً بك في KingGPT 👑
+          </h1>
+
+          <p>
+            إزاي أقدر أساعدك؟
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- INPUT -->
+
+      <div class="input-container">
+
+        <div class="input-box">
+
+          <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="اكتب رسالتك هنا..."
+            autocomplete="off"
+            spellcheck="false"
+          ></textarea>
+
+          <button
+            class="send-btn"
+            id="sendBtn"
+            type="button"
+            aria-label="إرسال"
+          >
+            ➤
+          </button>
+
+        </div>
+
+        <div class="input-note">
+          KingGPT قد يخطئ أحيانًا، راجع المعلومات المهمة.
+        </div>
+
+      </div>
+
+    </main>
+
+
+    <!-- MOBILE OVERLAY -->
+
+    <div
+      class="overlay"
+      id="overlay"
+    ></div>
+
+  </div>
+
+
+  <!-- ================================
+       SCRIPTS
+  ================================= -->
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script src="app.js"></script>
+
+</body>
+
+</html>
