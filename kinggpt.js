@@ -186,6 +186,10 @@ async function askKingGPT(message, user) {
   }
 
 
+  // ======================================
+  // USER CONTEXT
+  // ======================================
+
   let userContext = "";
 
   if (user) {
@@ -216,6 +220,10 @@ ${user.email}
 
 
   let lastError;
+
+  // ======================================
+  // TRY MODELS
+  // ======================================
 
   for (const model of modelsToTry) {
     try {
@@ -825,46 +833,50 @@ app.post(
 
 
 // ========================================
-// SERVER
+// VERCEL EXPORT / LOCAL SERVER
 // ========================================
 
-app.listen(
-  PORT,
-  () => {
-    console.log(
-      "========================================"
-    );
+if (require.main === module) {
+  app.listen(
+    PORT,
+    () => {
+      console.log(
+        "========================================"
+      );
 
-    console.log(
-      "👑 KingGPT SERVER"
-    );
+      console.log(
+        "👑 KingGPT SERVER"
+      );
 
-    console.log(
-      "========================================"
-    );
+      console.log(
+        "========================================"
+      );
 
-    console.log(
-      `🌐 Port: ${PORT}`
-    );
+      console.log(
+        `🌐 Port: ${PORT}`
+      );
 
-    console.log(
-      "🔐 Auth: enabled"
-    );
+      console.log(
+        "🔐 Auth: enabled"
+      );
 
-    console.log(
-      "💾 Database: Neon PostgreSQL"
-    );
+      console.log(
+        "💾 Database: Neon PostgreSQL"
+      );
 
-    console.log(
-      "💬 Chat history: enabled"
-    );
+      console.log(
+        "💬 Chat history: enabled"
+      );
 
-    console.log(
-      "🤖 Gemini: enabled"
-    );
+      console.log(
+        "🤖 Gemini: enabled"
+      );
 
-    console.log(
-      "========================================"
-    );
-  }
-);
+      console.log(
+        "========================================"
+      );
+    }
+  );
+}
+
+module.exports = app;
