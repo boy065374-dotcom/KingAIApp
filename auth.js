@@ -1,47 +1,123 @@
-const path = require("node:path");
+require("dotenv").config();
+
 const crypto = require("node:crypto");
-const { DatabaseSync } = require("node:sqlite");
-
-const DB_PATH = path.join(__dirname, "kingai.db");
-
-const db = new DatabaseSync(DB_PATH);
+const { Pool } = require("pg");
 
 // ========================================
 // DATABASE
 // ========================================
 
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
-
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    password_salt TEXT NOT NULL,
-    display_name TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL غير موجود في ملف .env"
   );
+}
 
-  CREATE TABLE IF NOT EXISTS sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    token_hash TEXT NOT NULL UNIQUE,
-    expires_at INTEGER NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+const pool = new Pool({
+  connectionString:
+    process.env.DATABASE_URL,
 
-    FOREIGN KEY (user_id)
-      REFERENCES users(id)
-      ON DELETE CASCADE
-  );
+  ssl: {
+    rejectUnauthorized: false
+  },
 
-  CREATE INDEX IF NOT EXISTS idx_sessions_token
-  ON sessions(token_hash);
+  max: 10,
 
-  CREATE INDEX IF NOT EXISTS idx_sessions_user
-  ON sessions(user_id);
-`);
+  idleTimeoutMillis: 30000,
+
+  connectionTimeoutMillis: 10000
+});
+
+
+const db = {
+  query(text, params) {
+    return pool.query(text, params);
+  }
+};
+
+
+// ========================================
+// DATABASE READY
+// ========================================
+
+const dbReady =
+  initDatabase();
+
+async function initDatabase() {
+
+  const client =
+    await pool.connect();
+
+  try {
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id BIGSERIAL PRIMARY KEY,
+
+        email TEXT NOT NULL UNIQUE,
+
+        password_hash TEXT NOT NULL,
+
+        password_salt TEXT NOT NULL,
+
+        display_name TEXT NOT NULL DEFAULT '',
+
+        created_at
+          TIMESTAMPTZ NOT NULL
+          DEFAULT CURRENT_TIMESTAMP,
+
+        updated_at
+          TIMESTAMPTZ NOT NULL
+          DEFAULT CURRENT_TIMESTAMP
+      );
+
+
+      CREATE TABLE IF NOT EXISTS sessions (
+        id BIGSERIAL PRIMARY KEY,
+
+        user_id BIGINT NOT NULL,
+
+        token_hash TEXT NOT NULL UNIQUE,
+
+        expires_at BIGINT NOT NULL,
+
+        created_at
+          TIMESTAMPTZ NOT NULL
+          DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT sessions_user_fk
+          FOREIGN KEY (user_id)
+          REFERENCES users(id)
+          ON DELETE CASCADE
+      );
+
+
+      CREATE INDEX IF NOT EXISTS
+        idx_sessions_token
+      ON sessions(token_hash);
+
+
+      CREATE INDEX IF NOT EXISTS
+        idx_sessions_user
+      ON sessions(user_id);
+
+
+      CREATE INDEX IF NOT EXISTS
+        idx_users_email
+      ON users(email);
+    `);
+
+    console.log(
+      "🔐 Neon auth database ready."
+    );
+
+  } finally {
+
+    client.release();
+
+  }
+}
+
 
 // ========================================
 // CONFIG
@@ -57,7 +133,9 @@ const SESSION_MS =
   1000;
 
 const PASSWORD_MIN_LENGTH = 6;
+
 const PASSWORD_MAX_LENGTH = 128;
+
 
 // ========================================
 // PASSWORD HASH
@@ -66,7 +144,10 @@ const PASSWORD_MAX_LENGTH = 128;
 function hashPassword(password) {
 
   const salt =
-    crypto.randomBytes(16).toString("hex");
+    crypto
+      .randomBytes(16)
+      .toString("hex");
+
 
   const hash =
     crypto.scryptSync(
@@ -78,7 +159,9 @@ function hashPassword(password) {
         r: 8,
         p: 1
       }
-    ).toString("hex");
+    )
+    .toString("hex");
+
 
   return {
     hash,
@@ -107,18 +190,23 @@ function verifyPassword(
         }
       );
 
+
     const storedBuffer =
       Buffer.from(
         storedHash,
         "hex"
       );
 
+
     if (
       storedBuffer.length !==
       calculatedHash.length
     ) {
+
       return false;
+
     }
+
 
     return crypto.timingSafeEqual(
       calculatedHash,
@@ -132,8 +220,9 @@ function verifyPassword(
   }
 }
 
+
 // ========================================
-// SESSION
+// SESSION TOKEN
 // ========================================
 
 function hashSessionToken(token) {
@@ -145,37 +234,46 @@ function hashSessionToken(token) {
 }
 
 
-function createSession(userId) {
+async function createSession(userId) {
 
   const token =
     crypto
       .randomBytes(32)
       .toString("base64url");
 
+
   const tokenHash =
     hashSessionToken(token);
 
-  const expiresAt =
-    Date.now() + SESSION_MS;
 
-  db.prepare(`
-    INSERT INTO sessions (
-      user_id,
-      token_hash,
-      expires_at
-    )
-    VALUES (?, ?, ?)
-  `).run(
-    Number(userId),
-    String(tokenHash),
-    Number(expiresAt)
+  const expiresAt =
+    Date.now() +
+    SESSION_MS;
+
+
+  await db.query(
+    `
+      INSERT INTO sessions (
+        user_id,
+        token_hash,
+        expires_at
+      )
+      VALUES ($1, $2, $3)
+    `,
+    [
+      Number(userId),
+      String(tokenHash),
+      Number(expiresAt)
+    ]
   );
+
 
   return {
     token,
     expiresAt
   };
 }
+
 
 // ========================================
 // COOKIES
@@ -186,11 +284,14 @@ function parseCookies(req) {
   const header =
     req.headers.cookie;
 
+
   if (!header) {
     return {};
   }
 
+
   const cookies = {};
+
 
   for (
     const part of header.split(";")
@@ -199,19 +300,23 @@ function parseCookies(req) {
     const index =
       part.indexOf("=");
 
+
     if (index === -1) {
       continue;
     }
+
 
     const key =
       part
         .slice(0, index)
         .trim();
 
+
     const value =
       part
         .slice(index + 1)
         .trim();
+
 
     try {
 
@@ -224,7 +329,9 @@ function parseCookies(req) {
         value;
 
     }
+
   }
+
 
   return cookies;
 }
@@ -240,6 +347,7 @@ function setSessionCookie(
     process.env.NODE_ENV ===
     "production";
 
+
   const maxAge =
     Math.max(
       0,
@@ -251,17 +359,28 @@ function setSessionCookie(
       )
     );
 
+
   const parts = [
+
     `kingai_session=${encodeURIComponent(token)}`,
+
     "HttpOnly",
+
     "Path=/",
+
     "SameSite=Lax",
+
     `Max-Age=${maxAge}`
+
   ];
 
+
   if (isProduction) {
+
     parts.push("Secure");
+
   }
+
 
   res.setHeader(
     "Set-Cookie",
@@ -274,6 +393,7 @@ function clearSessionCookie(res) {
 
   res.setHeader(
     "Set-Cookie",
+
     [
       "kingai_session=",
       "HttpOnly",
@@ -282,72 +402,125 @@ function clearSessionCookie(res) {
       "Max-Age=0"
     ].join("; ")
   );
+
 }
+
 
 // ========================================
 // CURRENT USER
 // ========================================
 
-function getCurrentUser(req) {
+async function getCurrentUser(req) {
 
   const cookies =
     parseCookies(req);
 
+
   const token =
     cookies.kingai_session;
 
+
   if (!token) {
+
     return null;
+
   }
+
 
   const tokenHash =
     hashSessionToken(token);
 
-  const row =
-    db.prepare(`
-      SELECT
-        users.id,
-        users.email,
-        users.display_name,
-        users.created_at,
-        sessions.expires_at
-      FROM sessions
-      INNER JOIN users
-        ON users.id = sessions.user_id
-      WHERE sessions.token_hash = ?
-      LIMIT 1
-    `).get(
-      String(tokenHash)
+
+  try {
+
+    const result =
+      await db.query(
+        `
+          SELECT
+            users.id,
+            users.email,
+            users.display_name,
+            users.created_at,
+            sessions.expires_at
+
+          FROM sessions
+
+          INNER JOIN users
+            ON users.id =
+               sessions.user_id
+
+          WHERE sessions.token_hash = $1
+
+          LIMIT 1
+        `,
+        [
+          String(tokenHash)
+        ]
+      );
+
+
+    const row =
+      result.rows[0];
+
+
+    if (!row) {
+
+      return null;
+
+    }
+
+
+    if (
+      Number(row.expires_at) <=
+      Date.now()
+    ) {
+
+      await db.query(
+        `
+          DELETE FROM sessions
+          WHERE token_hash = $1
+        `,
+        [
+          String(tokenHash)
+        ]
+      );
+
+
+      return null;
+
+    }
+
+
+    return {
+
+      id:
+        Number(row.id),
+
+      email:
+        String(row.email),
+
+      displayName:
+        String(
+          row.display_name || ""
+        ),
+
+      createdAt:
+        String(row.created_at)
+
+    };
+
+  } catch (error) {
+
+    console.error(
+      "GET CURRENT USER ERROR:",
+      error
     );
 
-  if (!row) {
     return null;
+
   }
-
-  if (
-    Number(row.expires_at) <=
-    Date.now()
-  ) {
-
-    db.prepare(`
-      DELETE FROM sessions
-      WHERE token_hash = ?
-    `).run(
-      String(tokenHash)
-    );
-
-    return null;
-  }
-
-  return {
-    id: Number(row.id),
-    email: String(row.email),
-    displayName:
-      String(row.display_name || ""),
-    createdAt:
-      String(row.created_at)
-  };
 }
+
 
 // ========================================
 // AUTH ROUTES
@@ -361,21 +534,27 @@ function registerAuthRoutes(app) {
 
   app.post(
     "/api/auth/signup",
-    (req, res) => {
+
+    async (req, res) => {
 
       try {
+
+        await dbReady;
+
 
         const email =
           String(
             req.body?.email || ""
           )
-            .trim()
-            .toLowerCase();
+          .trim()
+          .toLowerCase();
+
 
         const password =
           String(
             req.body?.password || ""
           );
+
 
         if (
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -388,6 +567,7 @@ function registerAuthRoutes(app) {
           });
 
         }
+
 
         if (
           password.length <
@@ -401,6 +581,7 @@ function registerAuthRoutes(app) {
 
         }
 
+
         if (
           password.length >
           PASSWORD_MAX_LENGTH
@@ -413,17 +594,24 @@ function registerAuthRoutes(app) {
 
         }
 
+
         const existing =
-          db.prepare(`
-            SELECT id
-            FROM users
-            WHERE email = ?
-            LIMIT 1
-          `).get(
-            String(email)
+          await db.query(
+            `
+              SELECT id
+              FROM users
+              WHERE email = $1
+              LIMIT 1
+            `,
+            [
+              String(email)
+            ]
           );
 
-        if (existing) {
+
+        if (
+          existing.rows.length > 0
+        ) {
 
           return res.status(409).json({
             error:
@@ -432,42 +620,56 @@ function registerAuthRoutes(app) {
 
         }
 
+
         const {
           hash,
           salt
         } =
           hashPassword(password);
 
+
         const result =
-          db.prepare(`
-            INSERT INTO users (
-              email,
-              password_hash,
-              password_salt,
-              display_name,
-              created_at,
-              updated_at
-            )
-            VALUES (?, ?, ?, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-          `).run(
-            String(email),
-            String(hash),
-            String(salt)
+          await db.query(
+            `
+              INSERT INTO users (
+                email,
+                password_hash,
+                password_salt,
+                display_name
+              )
+
+              VALUES ($1, $2, $3, '')
+
+              RETURNING
+                id,
+                email,
+                display_name,
+                created_at
+            `,
+            [
+              String(email),
+              String(hash),
+              String(salt)
+            ]
           );
 
-        const userId =
-          Number(
-            result.lastInsertRowid
-          );
+
+        const user =
+          result.rows[0];
+
 
         const session =
-          createSession(userId);
+          await createSession(
+            Number(user.id)
+          );
+
 
         setSessionCookie(
           res,
           session.token,
           session.expiresAt
         );
+
 
         return res.status(201).json({
 
@@ -476,9 +678,21 @@ function registerAuthRoutes(app) {
           needsName: true,
 
           user: {
-            id: userId,
-            email,
-            displayName: ""
+
+            id:
+              Number(user.id),
+
+            email:
+              String(user.email),
+
+            displayName:
+              String(
+                user.display_name || ""
+              ),
+
+            createdAt:
+              String(user.created_at)
+
           }
 
         });
@@ -490,14 +704,30 @@ function registerAuthRoutes(app) {
           error
         );
 
+
+        if (
+          error.code ===
+          "23505"
+        ) {
+
+          return res.status(409).json({
+            error:
+              "هذا البريد الإلكتروني مستخدم بالفعل."
+          });
+
+        }
+
+
         return res.status(500).json({
           error:
             "حدث خطأ أثناء إنشاء الحساب."
         });
 
       }
+
     }
   );
+
 
   // ======================================
   // LOGIN
@@ -505,21 +735,27 @@ function registerAuthRoutes(app) {
 
   app.post(
     "/api/auth/login",
-    (req, res) => {
+
+    async (req, res) => {
 
       try {
+
+        await dbReady;
+
 
         const email =
           String(
             req.body?.email || ""
           )
-            .trim()
-            .toLowerCase();
+          .trim()
+          .toLowerCase();
+
 
         const password =
           String(
             req.body?.password || ""
           );
+
 
         if (
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -533,6 +769,7 @@ function registerAuthRoutes(app) {
 
         }
 
+
         if (!password) {
 
           return res.status(400).json({
@@ -542,21 +779,33 @@ function registerAuthRoutes(app) {
 
         }
 
-        const user =
-          db.prepare(`
-            SELECT
-              id,
-              email,
-              password_hash,
-              password_salt,
-              display_name,
-              created_at
-            FROM users
-            WHERE email = ?
-            LIMIT 1
-          `).get(
-            String(email)
+
+        const result =
+          await db.query(
+            `
+              SELECT
+                id,
+                email,
+                password_hash,
+                password_salt,
+                display_name,
+                created_at
+
+              FROM users
+
+              WHERE email = $1
+
+              LIMIT 1
+            `,
+            [
+              String(email)
+            ]
           );
+
+
+        const user =
+          result.rows[0];
+
 
         if (!user) {
 
@@ -567,12 +816,14 @@ function registerAuthRoutes(app) {
 
         }
 
+
         const valid =
           verifyPassword(
             password,
             user.password_hash,
             user.password_salt
           );
+
 
         if (!valid) {
 
@@ -583,16 +834,19 @@ function registerAuthRoutes(app) {
 
         }
 
+
         const session =
-          createSession(
+          await createSession(
             Number(user.id)
           );
+
 
         setSessionCookie(
           res,
           session.token,
           session.expiresAt
         );
+
 
         return res.json({
 
@@ -603,7 +857,8 @@ function registerAuthRoutes(app) {
 
           user: {
 
-            id: Number(user.id),
+            id:
+              Number(user.id),
 
             email:
               String(user.email),
@@ -627,14 +882,17 @@ function registerAuthRoutes(app) {
           error
         );
 
+
         return res.status(500).json({
           error:
             "حدث خطأ أثناء تسجيل الدخول."
         });
 
       }
+
     }
   );
+
 
   // ======================================
   // ME
@@ -642,32 +900,56 @@ function registerAuthRoutes(app) {
 
   app.get(
     "/api/auth/me",
-    (req, res) => {
 
-      const user =
-        getCurrentUser(req);
+    async (req, res) => {
 
-      if (!user) {
+      try {
 
-        return res.status(401).json({
-          authenticated: false
+        await dbReady;
+
+
+        const user =
+          await getCurrentUser(req);
+
+
+        if (!user) {
+
+          return res.status(401).json({
+            authenticated: false
+          });
+
+        }
+
+
+        return res.json({
+
+          authenticated: true,
+
+          needsName:
+            !user.displayName,
+
+          user
+
+        });
+
+      } catch (error) {
+
+        console.error(
+          "ME ERROR:",
+          error
+        );
+
+
+        return res.status(500).json({
+          error:
+            "حدث خطأ أثناء التحقق من الحساب."
         });
 
       }
 
-      return res.json({
-
-        authenticated: true,
-
-        needsName:
-          !user.displayName,
-
-        user
-
-      });
-
     }
   );
+
 
   // ======================================
   // SET NAME
@@ -675,12 +957,17 @@ function registerAuthRoutes(app) {
 
   app.post(
     "/api/auth/name",
-    (req, res) => {
+
+    async (req, res) => {
 
       try {
 
+        await dbReady;
+
+
         const user =
-          getCurrentUser(req);
+          await getCurrentUser(req);
+
 
         if (!user) {
 
@@ -691,10 +978,12 @@ function registerAuthRoutes(app) {
 
         }
 
+
         const displayName =
           String(
             req.body?.displayName || ""
           ).trim();
+
 
         if (!displayName) {
 
@@ -704,6 +993,7 @@ function registerAuthRoutes(app) {
           });
 
         }
+
 
         if (
           displayName.length > 50
@@ -716,19 +1006,27 @@ function registerAuthRoutes(app) {
 
         }
 
-        db.prepare(`
-          UPDATE users
-          SET
-            display_name = ?,
-            updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `).run(
-          String(displayName),
-          Number(user.id)
+
+        await db.query(
+          `
+            UPDATE users
+
+            SET
+              display_name = $1,
+              updated_at = CURRENT_TIMESTAMP
+
+            WHERE id = $2
+          `,
+          [
+            String(displayName),
+            Number(user.id)
+          ]
         );
 
+
         const updatedUser =
-          getCurrentUser(req);
+          await getCurrentUser(req);
+
 
         return res.json({
 
@@ -738,7 +1036,8 @@ function registerAuthRoutes(app) {
 
           needsName: false,
 
-          user: updatedUser
+          user:
+            updatedUser
 
         });
 
@@ -749,14 +1048,17 @@ function registerAuthRoutes(app) {
           error
         );
 
+
         return res.status(500).json({
           error:
             "حدث خطأ أثناء حفظ الاسم."
         });
 
       }
+
     }
   );
+
 
   // ======================================
   // LOGOUT
@@ -764,31 +1066,44 @@ function registerAuthRoutes(app) {
 
   app.post(
     "/api/auth/logout",
-    (req, res) => {
+
+    async (req, res) => {
 
       try {
+
+        await dbReady;
+
 
         const cookies =
           parseCookies(req);
 
+
         const token =
           cookies.kingai_session;
+
 
         if (token) {
 
           const tokenHash =
             hashSessionToken(token);
 
-          db.prepare(`
-            DELETE FROM sessions
-            WHERE token_hash = ?
-          `).run(
-            String(tokenHash)
+
+          await db.query(
+            `
+              DELETE FROM sessions
+
+              WHERE token_hash = $1
+            `,
+            [
+              String(tokenHash)
+            ]
           );
 
         }
 
+
         clearSessionCookie(res);
+
 
         return res.json({
           authenticated: false
@@ -801,49 +1116,68 @@ function registerAuthRoutes(app) {
           error
         );
 
+
         clearSessionCookie(res);
+
 
         return res.json({
           authenticated: false
         });
 
       }
+
     }
   );
+
 
   // ======================================
   // CLEAN EXPIRED SESSIONS
   // ======================================
 
-  setInterval(() => {
+  setInterval(
+    async () => {
 
-    try {
+      try {
 
-      db.prepare(`
-        DELETE FROM sessions
-        WHERE expires_at <= ?
-      `).run(
-        Number(Date.now())
-      );
+        await db.query(
+          `
+            DELETE FROM sessions
 
-    } catch (error) {
+            WHERE expires_at <= $1
+          `,
+          [
+            Number(Date.now())
+          ]
+        );
 
-      console.error(
-        "SESSION CLEANUP ERROR:",
-        error
-      );
+      } catch (error) {
 
-    }
+        console.error(
+          "SESSION CLEANUP ERROR:",
+          error
+        );
 
-  }, 60 * 60 * 1000);
+      }
+
+    },
+    60 * 60 * 1000
+  );
+
 }
+
 
 // ========================================
 // EXPORTS
 // ========================================
 
 module.exports = {
+
   db,
+
+  dbReady,
+
   registerAuthRoutes,
+
   getCurrentUser
+
 };
