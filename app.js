@@ -74,10 +74,10 @@ function restoreAuthScreen() {
         >
       </div>
 
-      <h1>مرحبًا بك في KingGPT 👑</h1>
+      <h1>الوووو انا KingGPT يسطاااااااا</h1>
 
       <p class="auth-subtitle">
-        سجّل الدخول للمتابعة
+       مش هقولك حاجة غير ما تسجل وربنا سجل و اقولك
       </p>
 
       <button
@@ -125,13 +125,13 @@ function restoreAuthScreen() {
       </button>
 
       <p class="auth-switch">
-        ليس لديك حساب؟
+        معندكش حساب؟
 
         <button
           id="signupBtn"
           type="button"
         >
-          إنشاء حساب
+          انا اسمح؟ دوس هنا و اعمل
         </button>
       </p>
 
@@ -178,7 +178,7 @@ function setupAuthElements() {
       if (message) {
 
         message.textContent =
-          "🔐 تسجيل الدخول باستخدام Google سيتم تفعيله لاحقًا.";
+         "🔐 استنا التحديثات الجاية لعلى و عسى نعمل تسجيل الدخول بجوجل";
 
       }
 
@@ -260,11 +260,11 @@ function showPasswordReset() {
       </div>
 
       <h1>
-        استرجاع كلمة المرور 🔐
+        رجع كلمة السر هنا 🔄
       </h1>
 
       <p class="auth-subtitle">
-        أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور.
+        دخل بريدك الالكتروني و هتشوف البركة وربنا هرجعلك
       </p>
 
       <input
@@ -280,7 +280,7 @@ function showPasswordReset() {
         id="resetSendBtn"
         type="button"
       >
-        إرسال رابط الاسترجاع
+        ارسال رابط الاسترجاع
       </button>
 
       <p
@@ -293,7 +293,7 @@ function showPasswordReset() {
         id="backToLoginBtn"
         type="button"
       >
-        ← العودة لتسجيل الدخول
+        ← ارجع للتسجيل
       </button>
 
     </div>
@@ -345,7 +345,7 @@ function showPasswordReset() {
 
       if (message) {
         message.textContent =
-          "❌ اكتب بريد إلكتروني صحيح.";
+          "❌ اكتبه صح ياهطل";
       }
 
       return;
@@ -406,7 +406,7 @@ function showPasswordReset() {
 
         throw new Error(
           data.error ||
-          "تعذر إرسال رابط الاسترجاع."
+          "لا معلش كد النظام وقع تعالى كمان شوية"
         );
 
       }
@@ -418,7 +418,7 @@ function showPasswordReset() {
           "📧 " +
           (
             data.message ||
-            "إذا كان البريد مرتبطًا بحساب، ستصلك رسالة لإعادة تعيين كلمة المرور."
+            "لو الحساب كان مرتبط بالبريد دا كلمة المرور هتتغير بردو"
           );
 
       }
@@ -427,7 +427,7 @@ function showPasswordReset() {
     } catch (error) {
 
       console.error(
-        "FORGOT PASSWORD ERROR:",
+        "ايرووووور:",
         error
       );
 
@@ -438,7 +438,7 @@ function showPasswordReset() {
           "❌ " +
           (
             error.message ||
-            "حدث خطأ أثناء إرسال رابط الاسترجاع."
+            "اهو حدث خطأ بق اصبر شوية و جرب"
           );
 
       }
@@ -515,24 +515,24 @@ function showResetPasswordPage(token) {
       </div>
 
       <h1>
-        تعيين كلمة مرور جديدة 🔐
+        كلمة السر الجديدة هنااا مبروكك
       </h1>
 
       <p class="auth-subtitle">
-        اكتب كلمة المرور الجديدة لحسابك.
+        اكتب كلمة السر هنا
       </p>
 
       <input
         type="password"
         id="newPasswordInput"
-        placeholder="كلمة المرور الجديدة"
+        placeholder="كلمة السر الجاديدة"
         autocomplete="new-password"
       >
 
       <input
         type="password"
         id="confirmPasswordInput"
-        placeholder="تأكيد كلمة المرور"
+        placeholder="دخلها تاني علشان اتأكد"
         autocomplete="new-password"
       >
 
@@ -621,7 +621,7 @@ function showResetPasswordPage(token) {
     ) {
 
       message.textContent =
-        "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
+        "❌ حط 6 حروف على الاقل ياذكي";
 
       return;
     }
@@ -633,7 +633,7 @@ function showResetPasswordPage(token) {
     ) {
 
       message.textContent =
-        "❌ كلمتا المرور غير متطابقتين.";
+        "❌ لا معلش مش متطبقين اكتبهم تاني";
 
       return;
     }
@@ -687,7 +687,7 @@ function showResetPasswordPage(token) {
 
         throw new Error(
           data.error ||
-          "تعذر تغيير كلمة المرور."
+          "معرفتش اغير اصبر شوية و جرب تاني"
         );
 
       }
@@ -733,7 +733,7 @@ function showResetPasswordPage(token) {
         "❌ " +
         (
           error.message ||
-          "حدث خطأ أثناء تغيير كلمة المرور."
+          "معرفتش اغيرها علشان فيه ايرور و معرفهوش"
         );
 
 
@@ -812,11 +812,11 @@ function showNameScreen(user) {
       </div>
 
       <h1>
-        أهلًا بيك في KingGPT 👑
+        انا بق KingGPT
       </h1>
 
       <p class="auth-subtitle">
-        قبل ما نبدأ، تحب نناديك بإيه؟
+        قبل ما نبدأ، اقولك ايه يعني اناديك بايه
       </p>
 
       <input
@@ -832,7 +832,7 @@ function showNameScreen(user) {
         id="saveNameBtn"
         type="button"
       >
-        متابعة
+        كمل
       </button>
 
       <p
@@ -874,7 +874,7 @@ function showNameScreen(user) {
     if (!displayName) {
 
       message.textContent =
-        "❌ اكتب اسمك أولًا.";
+        "❌ اكتب اسمك يا اهطل";
 
       return;
     }
@@ -927,7 +927,7 @@ function showNameScreen(user) {
 
         throw new Error(
           data.error ||
-          "حدث خطأ."
+          "حدث خطأ. حاول مرة تانية كمان شوية"
         );
 
       }
@@ -3034,4 +3034,4 @@ if (!checkResetPasswordURL()) {
 
   checkAuth();
 
-    }
+      }
